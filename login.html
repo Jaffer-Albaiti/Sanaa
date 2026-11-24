@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Join Sanaa</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Georgia,serif;background:#fff8ee;color:#2b1b12}
+  .top{padding:12px 16px;background:#c8501e}
+  .top a{color:#fff8ee;text-decoration:none;font-size:1.1rem}
+  main{max-width:400px;margin:30px auto;padding:0 20px}
+  input{width:100%;padding:12px 16px;margin:6px 0;border:2px solid #2b1b12;border-radius:12px;font-size:1rem;background:#fff}
+  button{width:100%;padding:14px;margin-top:10px;border:0;border-radius:30px;font-size:1rem;cursor:pointer;background:#2b1b12;color:#fff8ee}
+  button.alt{background:none;color:#2b1b12;border:2px solid #2b1b12}
+  #msg{margin-top:14px;min-height:20px}
+</style>
+</head>
+<body>
+<div class="top"><a href="index.html">&larr; Sanaa</a></div>
+<main>
+  <h2>Artist sign in</h2>
+  <form id="f">
+    <input id="em" type="email" placeholder="Email">
+    <input id="pw" type="password" placeholder="Password (6+ characters)">
+    <button>Log in</button>
+    <button class="alt" type="button" id="up">Create new account</button>
+  </form>
+  <p id="msg"></p>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+  const $ = id => document.getElementById(id);
+  function say(t, bad){ const m=$("msg"); m.textContent=t; m.style.color = bad ? "#b00020" : "#2b7a3d"; }
+
+  async function go(signup){
+    const email = $("em").value.trim(), password = $("pw").value;
+    if(!email || password.length < 6) return say("Enter an email and a password of 6+ characters.", true);
+    say("Please wait...");
+    const r = signup
+      ? await db.auth.signUp({email, password})
+      : await db.auth.signInWithPassword({email, password});
+    if(r.error) return say(r.error.message, true);
+    if(r.data.session) location.href = "studio.html";
+    else say("Account created. Check your email to confirm, then log in.");
+  }
+
+  $("f").onsubmit = e => { e.preventDefault(); go(false); };
+  $("up").onclick = () => go(true);
+
+  db.auth.getSession().then(r => { if(r.data.session) location.href = "studio.html"; });
+</script>
+</body>
+</html>

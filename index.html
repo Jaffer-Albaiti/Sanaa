@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sanaa - Art of East Africa</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Georgia,serif;background:#fff8ee;color:#2b1b12}
+  header{padding:40px 20px;background:#c8501e;color:#fff8ee;text-align:center}
+  h1{font-size:2.6rem;margin:0}
+  header p{margin:8px 0 0}
+  .join{display:inline-block;margin-top:16px;padding:10px 22px;border:2px solid #fff8ee;border-radius:30px;color:#fff8ee;text-decoration:none}
+  .bar{padding:16px;max-width:900px;margin:auto}
+  input{width:100%;padding:12px 16px;border:2px solid #2b1b12;border-radius:30px;font-size:1rem;background:#fff}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .chip{padding:8px 16px;border:2px solid #2b1b12;border-radius:20px;background:none;font-size:.9rem;cursor:pointer}
+  .chip.on{background:#2b1b12;color:#fff8ee}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:0 16px 40px;max-width:900px;margin:auto}
+  @media(min-width:700px){.grid{grid-template-columns:repeat(3,1fr)}}
+  a.card{display:block;text-decoration:none;color:inherit;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+  .pic{width:100%;height:150px;object-fit:cover;display:block;background:#eadfce}
+  .info{padding:10px}
+  .info b{display:block}
+  .info small{color:#7a6556}
+  .empty{text-align:center;padding:40px;color:#7a6556}
+</style>
+</head>
+<body>
+<header>
+  <h1>Sanaa</h1>
+  <p>Where East African artists show their work and get hired.</p>
+  <a class="join" href="login.html">Join as an artist</a>
+</header>
+
+<div class="bar">
+  <input id="q" placeholder="Search art or artists...">
+  <div class="chips" id="chips"></div>
+</div>
+<div class="grid" id="grid"><div class="empty" style="grid-column:1/-1">Loading...</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+  const cats = ["All","Painting","Digital","Photography","Sculpture"];
+  let cat = "All", art = [];
+  const $ = id => document.getElementById(id);
+  function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+  function who(x){ return (x.profiles && x.profiles.name) || "Artist"; }
+
+  function draw(){
+    const q = $("q").value.toLowerCase();
+    const list = art.filter(x =>
+      (cat==="All" || x.category===cat) &&
+      (x.title.toLowerCase().includes(q) || who(x).toLowerCase().includes(q) || x.category.toLowerCase().includes(q)));
+    $("grid").innerHTML = list.length
+      ? list.map(x => `<a class="card" href="artist.html?id=${x.artist_id}">
+          <img class="pic" src="${esc(x.image_url)}" alt="${esc(x.title)}" loading="lazy">
+          <div class="info"><b>${esc(x.title)}</b><small>${esc(who(x))} · ${esc(x.category)}</small></div>
+        </a>`).join("")
+      : '<div class="empty" style="grid-column:1/-1">No artworks found.</div>';
+  }
+
+  async function load(){
+    const r = await db.from("artworks")
+      .select("id,title,category,image_url,artist_id,profiles(name)")
+      .order("created_at", {ascending:false});
+    if(r.error){
+      $("grid").innerHTML = '<div class="empty" style="grid-column:1/-1">Could not load art: ' + esc(r.error.message) + '</div>';
+      return;
+    }
+    art = r.data; draw();
+  }
+
+  $("chips").innerHTML = cats.map(c =>
+    `<button class="chip ${c==="All"?"on":""}" data-c="${c}">${c}</button>`).join("");
+  $("chips").onclick = e => {
+    if(!e.target.dataset.c) return;
+    cat = e.target.dataset.c;
+    document.querySelectorAll(".chip").forEach(b => b.classList.toggle("on", b.dataset.c===cat));
+    draw();
+  };
+  $("q").oninput = draw;
+  load();
+</script>
+</body>
+</html>
